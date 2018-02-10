@@ -1,5 +1,12 @@
 const MARGIN = 20;
 
+// what nodes have we attracted?
+const attd = new Map();
+
+function clone (o) {
+  return JSON.parse(JSON.stringify(o));
+}
+
 function readPosition(el) {
 	const { top, left, bottom, right, width, height } = el.getBoundingClientRect();
 	const { id } = el;
@@ -210,7 +217,7 @@ function toggleSize(el, pos, init, cause, moved) {
 		discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
 	} else {
 		init.clear();
-		pos.forEach((v, k) => init.set(k, JSON.parse(JSON.stringify(v))))
+		pos.forEach((v, k) => init.set(k, clone(v)))
 		el.setAttribute("expanding", 1);
 		el.classList.remove('collapsed');
 		discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
@@ -219,8 +226,10 @@ function toggleSize(el, pos, init, cause, moved) {
 	}
 }
 
+
 export {
 	attract,
+  clone,
 	discoverPositions,
 	euclideanSort,
 	repel,

@@ -2,6 +2,7 @@ import interact from 'interactjs';
 
 import {
 	attract,
+  clone,
 	discoverPositions,
 	euclideanSort,
 	repel,
@@ -23,9 +24,6 @@ const moved = new Map();
 // what nodes have caused this one to move?
 const cause = new Map();
 
-// what nodes have we attracted?
-const attd = new Map();
-
 let timer;
 
 discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
@@ -39,7 +37,7 @@ interact('.draggable')
 		discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
 		init.clear();
 		moved.clear();
-		pos.forEach((v, k) => init.set(k, JSON.parse(JSON.stringify(v))))
+		pos.forEach((v, k) => init.set(k, clone(v)))
 	},
 	onmove: (event) => {
 
