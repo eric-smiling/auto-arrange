@@ -5,6 +5,7 @@ import {
   clone,
   discoverPositions,
   euclideanSort,
+  nodes,
   repel,
   revert,
   testIntersection,
@@ -26,15 +27,15 @@ const cause = new Map();
 
 let timer;
 
-discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
 
+discoverPositions(pos);
 
 // target elements with the "draggable" class
 interact('.draggable')
 .draggable({
   onstart: (e) => {
-    e.target.style.zIndex = Date.now();
-    discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
+    e.target.style.zIndex = Date.now(); // move drag target to front
+    discoverPositions(pos); // read the positions
     init.clear();
     moved.clear();
     pos.forEach((v, k) => init.set(k, clone(v)))
@@ -42,24 +43,31 @@ interact('.draggable')
   onmove: (event) => {
 
     clearTimeout(timer);
-    var target = event.target;
 
-    const x = target.getBoundingClientRect().left + event.dx;
-    const y = target.getBoundingClientRect().top + event.dy;
+    const {
+      dx: eventDX,
+      dy: eventDY,
+      target,
+    } = event;
+    const targetRect = target.getBoundingClientRect();
+    const _pos = pos.get(target);
 
-    target.style.left = x + "px";
-    target.style.top = y + "px";
+    // move the target
+    target.style.left = `${targetRect.left +eventDX}px`;
+    target.style.top = `${targetRect.top + eventDY}px`;
+    
+    // update the pos map
+    pos.set(target, {
+      left: _pos.left + eventDX,
+      right: _pos.right + eventDX,
+      top: _pos.top + eventDY,
+      bottom: _pos.bottom + eventDY,
+    });
 
-    const ep = pos.get(target);
-
-    ep.left = ep.left + event.dx;
-    ep.right = ep.right + event.dx;
-    ep.top = ep.top + event.dy;
-    ep.bottom = ep.bottom + event.dy;
-    pos.set(target, ep);
-
+    // clear the causes
     cause.clear();
 
+    // set timer for delay of revert/repel
     timer = setTimeout(() => {
       revert(target, pos, init, moved);
       repel(target, target, pos, cause, moved)
@@ -67,14 +75,21 @@ interact('.draggable')
 
   },
 
-  onend: (e) => {
-    e.target.style.zIndex = 1;
+  onend: (event) => {
+    const { target } = event;
+    
+    target.style.zIndex = '';
+
     clearTimeout(timer);
-    repel(e.target, null, pos, cause, moved);
+
+    repel(target, null, pos, cause, moved);
   }
 });
 
-for (let el of Array.from(document.querySelectorAll('.draggable'))) {
-  interact(el).on('tap', e => toggleSize(e.target, pos, init, cause, moved), true);
-  interact(el).on('mousedown', e => e.target.classList.remove('repelling'), true);
+
+// other event handlers
+for (let node of nodes()) {
+  interact(node)
+    .on('tap', e => toggleSize(e.target, pos, init, cause, moved), true)
+    .on('mousedown', e => e.target.classList.remove('repelling'), true);
 }

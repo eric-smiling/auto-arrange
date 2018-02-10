@@ -13,8 +13,14 @@ function readPosition(el) {
   return { id, top, left, bottom, right, width, height };
 }
 
-function discoverPositions(pos, els) {
-  for (let el of els) {
+// TODO: invert control
+const nodes = () => {
+  return Array.from(document.querySelectorAll('.draggable'));
+};
+
+function discoverPositions(pos) {
+
+  for (let el of nodes()) {
     pos.set(el, readPosition(el));
   }
 }
@@ -24,7 +30,7 @@ function attract(target, dx, dy, ignore, pos) {
   if (target == ignore) return;
 
   const tp = pos.get(target);
-  const rectEls = Array.from(document.querySelectorAll('.draggable'));
+  const rectEls = nodes();
   rectEls.sort(euclideanSort(tp, pos.get.bind(pos)));
 
   for (let el of rectEls) {
@@ -80,7 +86,7 @@ function repel(target, ignore, pos, cause, moved) {
 
   // get our target position
   const tp = pos.get(target); 
-  const rectEls = Array.from(document.querySelectorAll('.draggable'));
+  const rectEls = nodes();
 
   for (let el of rectEls) {
 
@@ -150,7 +156,7 @@ function repel(target, ignore, pos, cause, moved) {
 
 function revert(target, pos, init, moved) {
 
-  const rectEls = Array.from(document.querySelectorAll('.draggable'));
+  const rectEls = nodes();
   const ep = pos.get(target);
 
   // sort rects by proximity to the target so we remember initial positions with the right dependency order
@@ -211,27 +217,27 @@ function toggleSize(el, pos, init, cause, moved) {
   if (!el.classList.contains('collapsed')) {
     const { width: w0, height: h0 } = pos.get(el);
     el.classList.add('collapsed');
-    discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
+    discoverPositions(pos);
     const { width: w1, height: h1 } = pos.get(el);
     attract(el, w1 - w0, h1 - h0, null, pos);
-    discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
+    discoverPositions(pos);
   } else {
     init.clear();
     pos.forEach((v, k) => init.set(k, clone(v)))
     el.setAttribute("expanding", 1);
     el.classList.remove('collapsed');
-    discoverPositions(pos, Array.from(document.querySelectorAll('.draggable')));
+    discoverPositions(pos);
     repel(el, null, pos, cause, moved);
     el.removeAttribute("expanding");
   }
 }
-
 
 export {
   attract,
   clone,
   discoverPositions,
   euclideanSort,
+  nodes,
   repel,
   revert,
   testIntersection,
