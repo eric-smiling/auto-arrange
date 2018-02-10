@@ -1,0 +1,22 @@
+{
+  "name": "auto-arrange",
+  "version": "1.0.0",
+  "description": "Automatticaly arrange blocks when dragged.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack-dev-server"
+  },
+  "author": "David Chester, Eric Smiling",
+  "license": "ISC",
+  "dependencies": {
+    "interactjs": "^1.3.3"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-es2015": "^6.24.1",
+    "webpack": "^3.10.0",
+    "webpack-dev-server": "^2.11.1"
+  }
+}
