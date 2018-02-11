@@ -1,28 +1,27 @@
 /* global document */
 
+import {
+  clone,
+} from './utils';
+
 const MARGIN = 20;
 
 // what nodes have we attracted?
 const attd = new Map();
 
+
+/*
+ * Deprecate (TODO)
+ */
+function nodes() {
+  return Array.from(document.querySelectorAll('.draggable'));
+}
+
+
 /*
  * Private Methods
  */
-function readPosition(node) {
-  const rect = node.getBoundingClientRect();
-
-  return {
-    id: node.id,
-    top: rect.top,
-    left: rect.left,
-    bottom: rect.bottom,
-    right: rect.right,
-    width: rect.width,
-    height: rect.height,
-  };
-}
-
-function euclideanSort(r, getter) {
+function euclideanSort(rect, getter) {
   // return a comparator fn to see which is closer to our reference
   return (a, b) => {
     const aX = getter ? getter(a) : a;
@@ -30,13 +29,13 @@ function euclideanSort(r, getter) {
 
     /* eslint-disable no-restricted-properties */
     const aDist = Math.sqrt((
-      Math.pow((aX.left + (aX.width / 2)) - (r.left + (r.width / 2)), 2) +
-      Math.pow((aX.top + (aX.height / 2)) - (r.top + (r.height / 2)), 2)
+      Math.pow((aX.left + (aX.width / 2)) - (rect.left + (rect.width / 2)), 2) +
+      Math.pow((aX.top + (aX.height / 2)) - (rect.top + (rect.height / 2)), 2)
     ));
 
     const bDist = Math.sqrt((
-      Math.pow((bX.left + (bX.width / 2)) - (r.left + (r.width / 2)), 2) +
-      Math.pow((bX.top + (bX.height / 2)) - (r.top + (r.height / 2)), 2)
+      Math.pow((bX.left + (bX.width / 2)) - (rect.left + (rect.width / 2)), 2) +
+      Math.pow((bX.top + (bX.height / 2)) - (rect.top + (rect.height / 2)), 2)
     ));
     /* eslint-disable no-restricted-properties */
 
@@ -45,8 +44,8 @@ function euclideanSort(r, getter) {
 }
 
 function testIntersection(r1, r2) {
-  if (r1.left > r2.right || r2.left > r1.right) return false;
-  if (r1.top > r2.bottom || r1.bottom < r2.top) return false;
+  if (r1.rect.left > r2.rect.right || r2.rect.left > r1.rect.right) return false;
+  if (r1.rect.top > r2.rect.bottom || r1.rect.bottom < r2.rect.top) return false;
   return true;
 }
 
@@ -67,7 +66,7 @@ function attract(target, dx, dy, ignore, pos) {
   const tp = pos.get(target);
   const rectNodes = nodes();
 
-  rectNodes.sort(euclideanSort(tp, pos.get.bind(pos)));
+  rectNodes.sort(euclideanSort(tp.rect, x => pos.get(x).rect));
 
   rectNodes.forEach((node) => {
     if (target === node || ignore === node || attd.has(node)) {
@@ -77,49 +76,53 @@ function attract(target, dx, dy, ignore, pos) {
     const ep = pos.get(node);
     const { style } = node;
 
-    const mx = (ep.left - tp.right) + dx;
+    const mx = (ep.rect.left - tp.rect.right) + dx;
     if ((mx >= 0 && mx <= MARGIN * 2) &&
       (
-        (ep.top < tp.bottom - dx && ep.bottom > tp.top - dx) ||
-        (ep.bottom > tp.top - dx && ep.top < tp.bottom - dx)
+        (ep.rect.top < tp.rect.bottom - dx && ep.rect.bottom > tp.rect.top - dx) ||
+        (ep.rect.bottom > tp.rect.top - dx && ep.rect.top < tp.rect.bottom - dx)
       )
     ) {
       // move left
       const cp = {
         id: node.id,
-        top: ep.top,
-        bottom: ep.bottom,
-        left: ep.left + dx,
-        right: ep.right + dx,
+        rect: {
+          top: ep.rect.top,
+          bottom: ep.rect.bottom,
+          left: ep.rect.left + dx,
+          right: ep.rect.right + dx,
+        },
       };
 
       if (!testIntersections(cp, rectNodes.map(e => pos.get(e)))) {
-        ep.left += dx;
-        ep.right += dx;
-        style.left = `${ep.left}px`;
+        ep.rect.left += dx;
+        ep.rect.right += dx;
+        style.left = `${ep.rect.left}px`;
         attd.set(node, true);
         attract(node, dx, dy, ignore || target);
       }
     }
-    const my = (ep.top - tp.bottom) + dy;
+    const my = (ep.rect.top - tp.rect.bottom) + dy;
     if ((my >= 0 && my <= MARGIN * 2) &&
       (
-        (ep.left < tp.right && ep.right > tp.left) ||
-        (ep.right > tp.left && ep.left < tp.right)
+        (ep.rect.left < tp.rect.right && ep.rect.right > tp.rect.left) ||
+        (ep.rect.right > tp.rect.left && ep.rect.left < tp.rect.right)
       )
     ) {
       // move up
       const cp = {
         id: node.id,
-        top: ep.top + dy,
-        bottom: ep.bottom + dy,
-        left: ep.left,
-        right: ep.right,
+        rect: {
+          top: ep.rect.top + dy,
+          bottom: ep.rect.bottom + dy,
+          left: ep.rect.left,
+          right: ep.rect.right,
+        },
       };
       if (!testIntersections(cp, rectNodes.map(e => pos.get(e)))) {
-        ep.top += dy;
-        ep.bottom += dy;
-        style.top = `${ep.top}px`;
+        ep.rect.top += dy;
+        ep.rect.bottom += dy;
+        style.top = `${ep.rect.top}px`;
         attd.set(node, true);
         attract(node, dx, dy, ignore || target);
       }
@@ -130,18 +133,29 @@ function attract(target, dx, dy, ignore, pos) {
 /*
  * Public Methods
  */
-function clone(o) {
-  return JSON.parse(JSON.stringify(o));
-}
-
-// TODO: invert control
-function nodes() {
-  return Array.from(document.querySelectorAll('.draggable'));
-}
-
 function discoverPositions(pos) {
   nodes().forEach((node) => {
-    pos.set(node, readPosition(node));
+    const { id } = node;
+    const {
+      bottom,
+      height,
+      left,
+      right,
+      top,
+      width,
+    } = node.getBoundingClientRect();
+
+    pos.set(node, {
+      id,
+      rect: {
+        bottom,
+        height,
+        left,
+        right,
+        top,
+        width,
+      },
+    });
   });
 }
 
@@ -178,16 +192,16 @@ function repel(target, ignore, pos, cause, moved) {
       cause.get(node).set(target, true);
 
       // find horizontal overlap
-      const ox1 = Math.max(tp.left, ep.left);
-      const ox2 = Math.min(tp.right, ep.right);
+      const ox1 = Math.max(tp.rect.left, ep.rect.left);
+      const ox2 = Math.min(tp.rect.right, ep.rect.right);
 
-      const xSign = (ep.right + ep.left) / 2 > (tp.right + tp.left) / 2 ? 1 : -1;
+      const xSign = (ep.rect.right + ep.rect.left) / 2 > (tp.rect.right + tp.rect.left) / 2 ? 1 : -1;
       let xDisplacement = xSign * (ox2 - ox1);
 
-      const oy1 = Math.max(tp.top, ep.top);
-      const oy2 = Math.min(tp.bottom, ep.bottom);
+      const oy1 = Math.max(tp.rect.top, ep.rect.top);
+      const oy2 = Math.min(tp.rect.bottom, ep.rect.bottom);
 
-      const ySign = (ep.bottom + ep.top) / 2 > (tp.bottom + tp.top) / 2 ? 1 : -1;
+      const ySign = (ep.rect.bottom + ep.rect.top) / 2 > (tp.rect.bottom + tp.rect.top) / 2 ? 1 : -1;
       let yDisplacement = ySign * (oy2 - oy1);
 
       node.classList.add('repelling');
@@ -202,18 +216,18 @@ function repel(target, ignore, pos, cause, moved) {
             Math.ceil(xDisplacement) + MARGIN :
             Math.floor(xDisplacement) - MARGIN
         );
-        style.left = `${ex.left + xDisplacement}px`;
-        ex.left = parseInt(node.style.left, 10);
-        ex.right = ex.left + ex.width;
+        style.left = `${ex.rect.left + xDisplacement}px`;
+        ex.rect.left = parseInt(style.left, 10);
+        ex.rect.right = ex.rect.left + ex.rect.width;
       } else {
         yDisplacement = (
           yDisplacement > 0 ?
             Math.ceil(yDisplacement) + MARGIN :
             Math.floor(yDisplacement) - MARGIN
         );
-        style.top = `${ex.top + yDisplacement}px`;
-        ex.top = parseInt(node.style.top, 10);
-        ex.bottom = ex.top + ex.height;
+        style.top = `${ex.rect.top + yDisplacement}px`;
+        ex.rect.top = parseInt(style.top, 10);
+        ex.rect.bottom = ex.rect.top + ex.rect.height;
       }
 
       moved.set(node, true);
@@ -232,14 +246,13 @@ function revert(target, pos, init, moved) {
 
   // sort rects by proximity to the target so we remember
   // initial positions  with the right dependency order
-  rectNodes.sort(euclideanSort(ep, pos.get.bind(pos)));
+  rectNodes.sort(euclideanSort(ep.rect, x => pos.get(x).rect));
 
   rectNodes.forEach((el) => {
     if (el === target) {
       return;
     }
 
-    const elRect = pos.get(target);
     const initRect = init.get(el);
     const tpos = pos.get(el);
     const {
@@ -248,7 +261,7 @@ function revert(target, pos, init, moved) {
     } = el;
 
     // revert items back to where they were if there's now room
-    if (moved.has(el) && !testIntersection(initRect, elRect)) {
+    if (moved.has(el) && !testIntersection(initRect, pos.get(target))) {
       const inter = testIntersections(init.get(el), rectNodes.map((cel) => {
         const p = pos.get(cel);
         p.id = cel.id;
@@ -256,13 +269,13 @@ function revert(target, pos, init, moved) {
       }));
 
       if (!inter) {
-        tpos.left = initRect.left;
-        tpos.right = initRect.right;
-        tpos.top = initRect.top;
-        tpos.bottom = initRect.bottom;
+        tpos.rect.left = initRect.left;
+        tpos.rect.right = initRect.right;
+        tpos.rect.top = initRect.top;
+        tpos.rect.bottom = initRect.bottom;
         classList.add('repelling');
-        style.left = `${tpos.left}px`;
-        style.top = `${tpos.top}px`;
+        style.left = `${tpos.rect.left}px`;
+        style.top = `${tpos.rect.top}px`;
         tpos.id = el.id;
         pos.set(el, tpos);
         moved.delete(el);
@@ -275,10 +288,16 @@ function toggleSize(el, pos, init, cause, moved) {
   attd.clear();
   cause.clear();
   if (!el.classList.contains('collapsed')) {
-    const { width: w0, height: h0 } = pos.get(el);
+    const {
+      width: w0,
+      height: h0,
+    } = pos.get(el).rect;
     el.classList.add('collapsed');
     discoverPositions(pos);
-    const { width: w1, height: h1 } = pos.get(el);
+    const {
+      width: w1,
+      height: h1,
+    } = pos.get(el).rect;
     attract(el, w1 - w0, h1 - h0, null, pos);
     discoverPositions(pos);
   } else {
@@ -293,7 +312,6 @@ function toggleSize(el, pos, init, cause, moved) {
 }
 
 export {
-  clone,
   discoverPositions,
   nodes,
   repel,
