@@ -5,10 +5,9 @@ const MARGIN = 20;
 // what nodes have we attracted?
 const attd = new Map();
 
-function clone(o) {
-  return JSON.parse(JSON.stringify(o));
-}
-
+/*
+ * Private Methods
+ */
 function readPosition(node) {
   const rect = node.getBoundingClientRect();
 
@@ -21,17 +20,6 @@ function readPosition(node) {
     width: rect.width,
     height: rect.height,
   };
-}
-
-// TODO: invert control
-function nodes() {
-  return Array.from(document.querySelectorAll('.draggable'));
-}
-
-function discoverPositions(pos) {
-  nodes().forEach((node) => {
-    pos.set(node, readPosition(node));
-  });
 }
 
 function euclideanSort(r, getter) {
@@ -136,6 +124,24 @@ function attract(target, dx, dy, ignore, pos) {
         attract(node, dx, dy, ignore || target);
       }
     }
+  });
+}
+
+/*
+ * Public Methods
+ */
+function clone(o) {
+  return JSON.parse(JSON.stringify(o));
+}
+
+// TODO: invert control
+function nodes() {
+  return Array.from(document.querySelectorAll('.draggable'));
+}
+
+function discoverPositions(pos) {
+  nodes().forEach((node) => {
+    pos.set(node, readPosition(node));
   });
 }
 
