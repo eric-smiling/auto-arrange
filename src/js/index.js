@@ -1,28 +1,34 @@
 /* global document */
-
 import interact from 'interactjs';
 
 import Context from './Context';
 
-const getNodes = () => Array.from(document.querySelectorAll('.draggable'));
+// query selector for draggable nodes
+const NODE_QUERY_SELECTOR = '.draggable';
 
+// primary method for obtaining draggable nodes from the dom
+const getNodes = () => Array.from(document.querySelectorAll(NODE_QUERY_SELECTOR));
+
+// create context for auto-arranging nodes
 const context = new Context(getNodes);
-
-let timer;
-
 context.discoverPositions();
 
+// timer used for event handling while dragging
+let timer;
+
 // target elements with the "draggable" class
-interact('.draggable')
+interact(NODE_QUERY_SELECTOR)
   .draggable({
     onstart: (e) => {
-      e.target.style.zIndex = Date.now(); // move drag target to front
+      e.target.style.zIndex = Date.now();
 
+      // update context
       context.discoverPositions();
       context.clearInit();
       context.clearCause();
       context.clearMoved();
       context.captureInitialPositions();
+      //
     },
 
     onmove: (event) => {
@@ -33,13 +39,13 @@ interact('.draggable')
         dy: eventDY,
         target,
       } = event;
-      const targetRect = target.getBoundingClientRect();
 
-      // move the target
+      // move the target (basic interact dnd, nothing to do w/ auto arrange context)
+      const targetRect = target.getBoundingClientRect();
       target.style.left = `${targetRect.left + eventDX}px`;
       target.style.top = `${targetRect.top + eventDY}px`;
 
-      // update the pos map
+      // update context
       const targetPos = context.getPositionForNode(target);
       context.setPositionForNode(target, {
         id: targetPos.id,
@@ -50,30 +56,32 @@ interact('.draggable')
           bottom: targetPos.rect.bottom + eventDY,
         },
       });
-
       context.clearCause();
+      //
 
       // set timer for delay of changes
       timer = setTimeout(() => {
+        // update context
         context.doRevert(target);
         context.doRepel(target, target);
+        //
       }, 100);
     },
 
     onend: (event) => {
       const { target } = event;
-
       target.style.zIndex = '';
-
       clearTimeout(timer);
 
+      // update context
       context.doRepel(target, null);
+      //
     },
   });
 
 
 // other event handlers
-getNodes().forEach((node) => { // DEPENDENCY
+getNodes().forEach((node) => {
   interact(node)
     .on('tap', e => context.doToggleSize(e.target), true)
     .on('mousedown', e => e.target.classList.remove('repelling'), true);

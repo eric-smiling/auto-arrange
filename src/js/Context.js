@@ -21,8 +21,6 @@ export default class Context {
     this.getNodes = getNodes;
 
     this.discoverPositions();
-
-    console.log('CONTEXT CONSTRUCTED');
   }
 
   captureInitialPositions() {
