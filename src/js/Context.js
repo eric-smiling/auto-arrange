@@ -68,5 +68,4 @@ export default class Context {
   clearCause() {
     this.cause.clear();
   }
-
 }
