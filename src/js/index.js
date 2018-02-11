@@ -2,45 +2,27 @@
 
 import interact from 'interactjs';
 
-import {
-  clone,
-} from './utils';
-
-import {
-  discoverPositions,
-  repel,
-  revert,
-  toggleSize,
-} from './methods';
-
-// current positions
-const pos = new Map();
-
-// initial positions at drag start
-const init = new Map();
-
-// have we moved this node within this mousemove?
-const moved = new Map();
-
-// what nodes have caused this one to move?
-const cause = new Map();
+import Context from './Context';
 
 const getNodes = () => Array.from(document.querySelectorAll('.draggable'));
 
+const context = new Context(getNodes);
+
 let timer;
 
-
-discoverPositions(pos, getNodes); // DEPENDENCY
+context.discoverPositions();
 
 // target elements with the "draggable" class
 interact('.draggable')
   .draggable({
     onstart: (e) => {
       e.target.style.zIndex = Date.now(); // move drag target to front
-      discoverPositions(pos, getNodes); // DEPENDENCY
-      init.clear();
-      moved.clear();
-      pos.forEach((v, k) => init.set(k, clone(v)));
+
+      context.discoverPositions();
+      context.clearInit();
+      context.clearCause();
+      context.clearMoved();
+      context.captureInitialPositions();
     },
 
     onmove: (event) => {
@@ -52,14 +34,14 @@ interact('.draggable')
         target,
       } = event;
       const targetRect = target.getBoundingClientRect();
-      const targetPos = pos.get(target);
 
       // move the target
       target.style.left = `${targetRect.left + eventDX}px`;
       target.style.top = `${targetRect.top + eventDY}px`;
 
       // update the pos map
-      pos.set(target, {
+      const targetPos = context.getPositionForNode(target);
+      context.setPositionForNode(target, {
         id: targetPos.id,
         rect: {
           left: targetPos.rect.left + eventDX,
@@ -69,13 +51,12 @@ interact('.draggable')
         },
       });
 
-      // clear the causes
-      cause.clear();
+      context.clearCause();
 
       // set timer for delay of changes
       timer = setTimeout(() => {
-        revert(target, pos, init, moved, getNodes); // DEPENDENCY
-        repel(target, target, pos, cause, moved, getNodes); // DEPENDENCY
+        context.doRevert(target);
+        context.doRepel(target, target);
       }, 100);
     },
 
@@ -86,7 +67,7 @@ interact('.draggable')
 
       clearTimeout(timer);
 
-      repel(target, null, pos, cause, moved, getNodes); // DEPENDENCY
+      context.doRepel(target, null);
     },
   });
 
@@ -94,6 +75,6 @@ interact('.draggable')
 // other event handlers
 getNodes().forEach((node) => { // DEPENDENCY
   interact(node)
-    .on('tap', e => toggleSize(e.target, pos, init, cause, moved), true, getNodes) // DEPENDENCY
+    .on('tap', e => context.doToggleSize(e.target), true)
     .on('mousedown', e => e.target.classList.remove('repelling'), true);
 });
