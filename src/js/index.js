@@ -1,3 +1,5 @@
+/* global document */
+
 import interact from 'interactjs';
 
 import {
@@ -6,7 +8,6 @@ import {
 
 import {
   discoverPositions,
-  nodes,
   repel,
   revert,
   toggleSize,
@@ -24,17 +25,19 @@ const moved = new Map();
 // what nodes have caused this one to move?
 const cause = new Map();
 
+const getNodes = () => Array.from(document.querySelectorAll('.draggable'));
+
 let timer;
 
 
-discoverPositions(pos); // DEPENDENCY
+discoverPositions(pos, getNodes); // DEPENDENCY
 
 // target elements with the "draggable" class
 interact('.draggable')
   .draggable({
     onstart: (e) => {
       e.target.style.zIndex = Date.now(); // move drag target to front
-      discoverPositions(pos); // DEPENDENCY
+      discoverPositions(pos, getNodes); // DEPENDENCY
       init.clear();
       moved.clear();
       pos.forEach((v, k) => init.set(k, clone(v)));
@@ -71,8 +74,8 @@ interact('.draggable')
 
       // set timer for delay of changes
       timer = setTimeout(() => {
-        revert(target, pos, init, moved); // DEPENDENCY
-        repel(target, target, pos, cause, moved); // DEPENDENCY
+        revert(target, pos, init, moved, getNodes); // DEPENDENCY
+        repel(target, target, pos, cause, moved, getNodes); // DEPENDENCY
       }, 100);
     },
 
@@ -83,14 +86,14 @@ interact('.draggable')
 
       clearTimeout(timer);
 
-      repel(target, null, pos, cause, moved); // DEPENDENCY
+      repel(target, null, pos, cause, moved, getNodes); // DEPENDENCY
     },
   });
 
 
 // other event handlers
-nodes().forEach((node) => { // DEPENDENCY
+getNodes().forEach((node) => { // DEPENDENCY
   interact(node)
-    .on('tap', e => toggleSize(e.target, pos, init, cause, moved), true) // DEPENDENCY
+    .on('tap', e => toggleSize(e.target, pos, init, cause, moved), true, getNodes) // DEPENDENCY
     .on('mousedown', e => e.target.classList.remove('repelling'), true);
 });

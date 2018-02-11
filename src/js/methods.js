@@ -11,14 +11,6 @@ const attd = new Map();
 
 
 /*
- * Deprecate (TODO)
- */
-function nodes() {
-  return Array.from(document.querySelectorAll('.draggable'));
-}
-
-
-/*
  * Private Methods
  */
 function euclideanSort(rect, getter) {
@@ -58,13 +50,13 @@ function testIntersections(r0, rs) {
   return inter;
 }
 
-function attract(target, dx, dy, ignore, pos) {
+function attract(target, dx, dy, ignore, pos, getNodes) {
   if (target === ignore) {
     return;
   }
 
   const tp = pos.get(target);
-  const rectNodes = nodes();
+  const rectNodes = getNodes();
 
   rectNodes.sort(euclideanSort(tp.rect, x => pos.get(x).rect));
 
@@ -99,7 +91,7 @@ function attract(target, dx, dy, ignore, pos) {
         ep.rect.right += dx;
         style.left = `${ep.rect.left}px`;
         attd.set(node, true);
-        attract(node, dx, dy, ignore || target);
+        attract(node, dx, dy, ignore || target, getNodes);
       }
     }
     const my = (ep.rect.top - tp.rect.bottom) + dy;
@@ -124,7 +116,7 @@ function attract(target, dx, dy, ignore, pos) {
         ep.rect.bottom += dy;
         style.top = `${ep.rect.top}px`;
         attd.set(node, true);
-        attract(node, dx, dy, ignore || target);
+        attract(node, dx, dy, ignore || target, getNodes);
       }
     }
   });
@@ -133,37 +125,21 @@ function attract(target, dx, dy, ignore, pos) {
 /*
  * Public Methods
  */
-function discoverPositions(pos) {
-  nodes().forEach((node) => {
-    const { id } = node;
-    const {
-      bottom,
-      height,
-      left,
-      right,
-      top,
-      width,
-    } = node.getBoundingClientRect();
-
-    pos.set(node, {
-      id,
-      rect: {
-        bottom,
-        height,
-        left,
-        right,
-        top,
-        width,
-      },
+function discoverPositions(pos, getNodes) {
+  getNodes()
+    .forEach((node) => {
+      pos.set(node, {
+        id: node.id,
+        rect: clone(node.getBoundingClientRect()),
+      });
     });
-  });
 }
 
-function repel(target, ignore, pos, cause, moved) {
+function repel(target, ignore, pos, cause, moved, getNodes) {
   // get our target position
   const tp = pos.get(target);
 
-  nodes().forEach((node) => {
+  getNodes().forEach((node) => {
     // don't try to move ourself out of our own way
     if (target === node) {
       return;
@@ -235,18 +211,17 @@ function repel(target, ignore, pos, cause, moved) {
       pos.set(node, ep);
 
       // recurse to move any nodes out of the way which might now intersect
-      repel(node, ignore, pos, cause, moved);
+      repel(node, ignore, pos, cause, moved, getNodes);
     }
   });
 }
 
-function revert(target, pos, init, moved) {
-  const rectNodes = nodes();
+function revert(target, pos, init, moved, getNodes) {
   const ep = pos.get(target);
 
   // sort rects by proximity to the target so we remember
   // initial positions  with the right dependency order
-  rectNodes.sort(euclideanSort(ep.rect, x => pos.get(x).rect));
+  const rectNodes = getNodes().sort(euclideanSort(ep.rect, x => pos.get(x).rect));
 
   rectNodes.forEach((el) => {
     if (el === target) {
@@ -284,7 +259,7 @@ function revert(target, pos, init, moved) {
   });
 }
 
-function toggleSize(el, pos, init, cause, moved) {
+function toggleSize(el, pos, init, cause, moved, getNodes) {
   attd.clear();
   cause.clear();
   if (!el.classList.contains('collapsed')) {
@@ -293,27 +268,26 @@ function toggleSize(el, pos, init, cause, moved) {
       height: h0,
     } = pos.get(el).rect;
     el.classList.add('collapsed');
-    discoverPositions(pos);
+    discoverPositions(pos, getNodes);
     const {
       width: w1,
       height: h1,
     } = pos.get(el).rect;
-    attract(el, w1 - w0, h1 - h0, null, pos);
-    discoverPositions(pos);
+    attract(el, w1 - w0, h1 - h0, null, pos, getNodes);
+    discoverPositions(pos, getNodes);
   } else {
     init.clear();
     pos.forEach((v, k) => init.set(k, clone(v)));
     el.setAttribute('expanding', 1);
     el.classList.remove('collapsed');
-    discoverPositions(pos);
-    repel(el, null, pos, cause, moved);
+    discoverPositions(pos, getNodes);
+    repel(el, null, pos, cause, moved, getNodes);
     el.removeAttribute('expanding');
   }
 }
 
 export {
   discoverPositions,
-  nodes,
   repel,
   revert,
   toggleSize,
