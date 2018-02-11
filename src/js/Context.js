@@ -6,7 +6,7 @@ import {
   repel,
   revert,
   toggleSize,
-} from './methods';
+} from './actions';
 
 export default class Context {
   constructor(getNodes) {
@@ -17,6 +17,7 @@ export default class Context {
     this.init = new Map(); // initial positions at drag start
     this.moved = new Map(); // have we moved this node within this mousemove?
     this.cause = new Map(); // what nodes have caused this one to move?
+    this.attd = new Map();
 
     this.getNodes = getNodes;
 
@@ -46,7 +47,16 @@ export default class Context {
   }
 
   doToggleSize(target) {
-    toggleSize(target, this.pos, this.init, this.cause, this.moved, this.getNodes);
+    toggleSize(
+      target,
+      this.pos,
+      this.init,
+      this.cause,
+      this.moved,
+      this.attd,
+      this.getNodes.bind(this),
+      this.discoverPositions.bind(this),
+    );
   }
 
   getPositionForNode(node) {

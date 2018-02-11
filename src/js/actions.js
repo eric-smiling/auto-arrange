@@ -6,14 +6,10 @@ import {
 } from './utils';
 import { MARGIN } from './constants';
 
-// what nodes have we attracted?
-const attd = new Map();
-
-
 /*
- * Private Methods
+ * Private Functions
  */
-function attract(target, dx, dy, ignore, pos, getNodes) {
+function attract(target, dx, dy, ignore, pos, getNodes, attd) {
   if (target === ignore) {
     return;
   }
@@ -54,7 +50,7 @@ function attract(target, dx, dy, ignore, pos, getNodes) {
         ep.rect.right += dx;
         style.left = `${ep.rect.left}px`;
         attd.set(node, true);
-        attract(node, dx, dy, ignore || target, getNodes);
+        attract(node, dx, dy, ignore || target, getNodes, attd);
       }
     }
     const my = (ep.rect.top - tp.rect.bottom) + dy;
@@ -79,25 +75,15 @@ function attract(target, dx, dy, ignore, pos, getNodes) {
         ep.rect.bottom += dy;
         style.top = `${ep.rect.top}px`;
         attd.set(node, true);
-        attract(node, dx, dy, ignore || target, getNodes);
+        attract(node, dx, dy, ignore || target, getNodes, attd);
       }
     }
   });
 }
 
 /*
- * Public Methods
+ * Public Functions
  */
-function discoverPositions(pos, getNodes) {
-  getNodes()
-    .forEach((node) => {
-      pos.set(node, {
-        id: node.id,
-        rect: clone(node.getBoundingClientRect()),
-      });
-    });
-}
-
 function repel(target, ignore, pos, cause, moved, getNodes) {
   // get our target position
   const tp = pos.get(target);
@@ -222,7 +208,7 @@ function revert(target, pos, init, moved, getNodes) {
   });
 }
 
-function toggleSize(el, pos, init, cause, moved, getNodes) {
+function toggleSize(el, pos, init, cause, moved, attd, getNodes, discoverPositions) {
   attd.clear();
   cause.clear();
   if (!el.classList.contains('collapsed')) {
@@ -231,26 +217,25 @@ function toggleSize(el, pos, init, cause, moved, getNodes) {
       height: h0,
     } = pos.get(el).rect;
     el.classList.add('collapsed');
-    discoverPositions(pos, getNodes);
+    discoverPositions();
     const {
       width: w1,
       height: h1,
     } = pos.get(el).rect;
-    attract(el, w1 - w0, h1 - h0, null, pos, getNodes);
-    discoverPositions(pos, getNodes);
+    attract(el, w1 - w0, h1 - h0, null, pos, getNodes, attd);
+    discoverPositions();
   } else {
     init.clear();
     pos.forEach((v, k) => init.set(k, clone(v)));
     el.setAttribute('expanding', 1);
     el.classList.remove('collapsed');
-    discoverPositions(pos, getNodes);
+    discoverPositions();
     repel(el, null, pos, cause, moved, getNodes);
     el.removeAttribute('expanding');
   }
 }
 
 export {
-  discoverPositions,
   repel,
   revert,
   toggleSize,
