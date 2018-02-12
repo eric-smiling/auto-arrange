@@ -37,3 +37,11 @@ node ==> {
 - add jsdoc
 - write tests
 - remove getNodes as a dependency from `attract`, `repel`, and `revert` actions
+
+
+#### TO USE:
+- clone the repo
+- npm install
+- npm run build
+- view the ui here: http://localhost:8080/dist/index.html
+- view the es5 here: http://localhost:8080/js/bundle.js
