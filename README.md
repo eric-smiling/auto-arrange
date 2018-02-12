@@ -37,6 +37,7 @@ node ==> {
 - add jsdoc
 - write tests
 - remove getNodes as a dependency from `attract`, `repel`, and `revert` actions
+- possibly move actions into Context class directly, eliminating the long argument lists
 
 
 #### TO USE:
