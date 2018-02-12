@@ -46,4 +46,4 @@ node ==> {
 - view the ui here: http://localhost:8080/dist/index.html
 - view the es5 here: http://localhost:8080/js/bundle.js
 
-Shortcut: Just grab `[bundle.js](https://github.com/eric-smiling/auto-arrange/blob/master/dist/js/bundle.js)`. Caution, it includes the interact library.
+Shortcut: Just grab [`bundle.js`](https://github.com/eric-smiling/auto-arrange/blob/master/dist/js/bundle.js). Caution, it includes the interact library.
