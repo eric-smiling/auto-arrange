@@ -73,6 +73,10 @@ export default class Context {
     );
   }
 
+  getPositions() {
+    return this.positions;
+  }
+
   getPositionForNode(node) {
     return this.positions.get(node);
   }
