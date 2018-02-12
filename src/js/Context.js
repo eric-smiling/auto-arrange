@@ -1,7 +1,4 @@
-import {
-  clone,
-} from './utils';
-
+import { clone } from './utils';
 import {
   repel,
   revert,

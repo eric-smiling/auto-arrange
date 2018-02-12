@@ -15,11 +15,11 @@ function attract(target, dx, dy, ignore, pos, getNodes, attd) {
   }
 
   const tp = pos.get(target);
-  const rectNodes = getNodes();
+  const nodes = getNodes();
 
-  rectNodes.sort(euclideanSort(tp.rect, x => pos.get(x).rect));
+  nodes.sort(euclideanSort(tp.rect, x => pos.get(x).rect));
 
-  rectNodes.forEach((node) => {
+  nodes.forEach((node) => {
     if (target === node || ignore === node || attd.has(node)) {
       return;
     }
@@ -45,7 +45,7 @@ function attract(target, dx, dy, ignore, pos, getNodes, attd) {
         },
       };
 
-      if (!testIntersections(cp, rectNodes.map(e => pos.get(e)))) {
+      if (!testIntersections(cp, nodes.map(e => pos.get(e)))) {
         ep.rect.left += dx;
         ep.rect.right += dx;
         style.left = `${ep.rect.left}px`;
@@ -70,7 +70,7 @@ function attract(target, dx, dy, ignore, pos, getNodes, attd) {
           right: ep.rect.right,
         },
       };
-      if (!testIntersections(cp, rectNodes.map(e => pos.get(e)))) {
+      if (!testIntersections(cp, nodes.map(e => pos.get(e)))) {
         ep.rect.top += dy;
         ep.rect.bottom += dy;
         style.top = `${ep.rect.top}px`;
@@ -170,9 +170,9 @@ function revert(target, pos, init, moved, getNodes) {
 
   // sort rects by proximity to the target so we remember
   // initial positions  with the right dependency order
-  const rectNodes = getNodes().sort(euclideanSort(ep.rect, x => pos.get(x).rect));
+  const nodes = getNodes().sort(euclideanSort(ep.rect, x => pos.get(x).rect));
 
-  rectNodes.forEach((el) => {
+  nodes.forEach((el) => {
     if (el === target) {
       return;
     }
@@ -186,7 +186,7 @@ function revert(target, pos, init, moved, getNodes) {
 
     // revert items back to where they were if there's now room
     if (moved.has(el) && !testIntersection(initRect, pos.get(target))) {
-      const inter = testIntersections(init.get(el), rectNodes.map((cel) => {
+      const inter = testIntersections(init.get(el), nodes.map((cel) => {
         const p = pos.get(cel);
         p.id = cel.id;
         return p;

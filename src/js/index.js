@@ -1,6 +1,5 @@
 /* global document */
 import interact from 'interactjs';
-
 import Context from './Context';
 
 // query selector for draggable nodes
