@@ -11,7 +11,6 @@ const getNodes = () => Array.from(document.querySelectorAll(NODE_QUERY_SELECTOR)
 
 // create context for auto-arranging nodes
 const context = new Context(getNodes);
-context.discoverPositions();
 
 // timer used for event handling while dragging
 let timer;
@@ -23,11 +22,7 @@ interact(NODE_QUERY_SELECTOR)
       e.target.style.zIndex = Date.now();
 
       // update context
-      context.discoverPositions();
-      context.clearInit();
-      context.clearCause();
-      context.clearMoved();
-      context.captureInitialPositions();
+      context.start();
       //
     },
 
@@ -56,14 +51,13 @@ interact(NODE_QUERY_SELECTOR)
           bottom: targetPos.rect.bottom + eventDY,
         },
       });
-      context.clearCause();
+      context.clearCausalNodes();
       //
 
       // set timer for delay of changes
       timer = setTimeout(() => {
         // update context
-        context.doRevert(target);
-        context.doRepel(target, target);
+        context.move(target);
         //
       }, 100);
     },
@@ -74,7 +68,7 @@ interact(NODE_QUERY_SELECTOR)
       clearTimeout(timer);
 
       // update context
-      context.doRepel(target, null);
+      context.end(target);
       //
     },
   });

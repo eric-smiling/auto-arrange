@@ -13,25 +13,42 @@ export default class Context {
     if (typeof getNodes !== 'function') {
       throw new Error('getNodes function is required');
     }
-    this.pos = new Map(); // current positions
-    this.init = new Map(); // initial positions at drag start
-    this.moved = new Map(); // have we moved this node within this mousemove?
-    this.cause = new Map(); // what nodes have caused this one to move?
-    this.attd = new Map();
 
-    this.getNodes = getNodes;
+    this.positions = new Map(); // current positions
+    this.initialPositions = new Map(); // initial positions at drag start
+    this.movedNodes = new Map(); // have we moved this node within this mousemove?
+    this.causalNodes = new Map(); // what nodes have caused this one to move?
+    this.attractedNodes = new Map(); // what nodes have we attracted?
+
+    this.getNodes = getNodes; // how can we find nodes
 
     this.discoverPositions();
   }
 
-  captureInitialPositions() {
-    this.pos.forEach((v, k) => this.init.set(k, clone(v)));
+  start() {
+    this.discoverPositions();
+    this.clearInitialPositions();
+    this.clearCausalNodes();
+    this.clearMovedNodes();
+
+    // capture initial positions
+    this.positions.forEach((v, k) => this.initialPositions.set(k, clone(v)));
   }
 
+  move(target) {
+    this.doRevert(target);
+    this.doRepel(target, target);
+  }
+
+  end(target) {
+    this.doRepel(target, null);
+  }
+
+  // go find the nodes and store the position data inside of this.positions
   discoverPositions() {
     this.getNodes()
       .forEach((node) => {
-        this.pos.set(node, {
+        this.positions.set(node, {
           id: node.id,
           rect: clone(node.getBoundingClientRect()),
         });
@@ -39,43 +56,43 @@ export default class Context {
   }
 
   doRevert(target) {
-    revert(target, this.pos, this.init, this.moved, this.getNodes);
+    revert(target, this.positions, this.initialPositions, this.movedNodes, this.getNodes);
   }
 
   doRepel(target, ignore) {
-    repel(target, ignore, this.pos, this.cause, this.moved, this.getNodes);
+    repel(target, ignore, this.positions, this.causalNodes, this.movedNodes, this.getNodes);
   }
 
   doToggleSize(target) {
     toggleSize(
       target,
-      this.pos,
-      this.init,
-      this.cause,
-      this.moved,
-      this.attd,
+      this.positions,
+      this.initialPositions,
+      this.causalNodes,
+      this.movedNodes,
+      this.attractedNodes,
       this.getNodes.bind(this),
       this.discoverPositions.bind(this),
     );
   }
 
   getPositionForNode(node) {
-    return this.pos.get(node);
+    return this.positions.get(node);
   }
 
   setPositionForNode(node, position) {
-    this.pos.set(node, position);
+    this.positions.set(node, position);
   }
 
-  clearMoved() {
-    this.moved.clear();
+  clearMovedNodes() {
+    this.movedNodes.clear();
   }
 
-  clearInit() {
-    this.init.clear();
+  clearInitialPositions() {
+    this.initialPositions.clear();
   }
 
-  clearCause() {
-    this.cause.clear();
+  clearCausalNodes() {
+    this.causalNodes.clear();
   }
 }
