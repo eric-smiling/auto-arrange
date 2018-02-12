@@ -33,6 +33,9 @@ node ==> {
 - airbnb linter rule are applied
 - bundle is created via webpack
 
+#### Known Bugs:
+- the dragging nodes disappear on a page that is scrolled vertically
+
 ##### TODO:
 - add jsdoc
 - write tests
