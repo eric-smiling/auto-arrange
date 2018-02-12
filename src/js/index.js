@@ -21,9 +21,8 @@ interact(NODE_QUERY_SELECTOR)
     onstart: (e) => {
       e.target.style.zIndex = Date.now();
 
-      // update context
+      // handle drag start within context
       context.start();
-      //
     },
 
     onmove: (event) => {
@@ -40,7 +39,7 @@ interact(NODE_QUERY_SELECTOR)
       target.style.left = `${targetRect.left + eventDX}px`;
       target.style.top = `${targetRect.top + eventDY}px`;
 
-      // update context
+      // update the context
       const targetPos = context.getPositionForNode(target);
       context.setPositionForNode(target, {
         id: targetPos.id,
@@ -56,9 +55,8 @@ interact(NODE_QUERY_SELECTOR)
 
       // set timer for delay of changes
       timer = setTimeout(() => {
-        // update context
+        // handle drag move within context
         context.move(target);
-        //
       }, 100);
     },
 
@@ -67,9 +65,8 @@ interact(NODE_QUERY_SELECTOR)
       target.style.zIndex = '';
       clearTimeout(timer);
 
-      // update context
+      // handle drag end within context
       context.end(target);
-      //
     },
   });
 
