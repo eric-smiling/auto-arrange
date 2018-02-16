@@ -26,9 +26,9 @@ export default class Context {
 
   start() {
     this.discoverPositions();
-    this.clearInitialPositions();
-    this.clearCausalNodes();
-    this.clearMovedNodes();
+    this.initialPositions.clear();
+    this.causalNodes.clear();
+    this.movedNodes.clear();
 
     // capture initial positions
     this.positions.forEach((v, k) => this.initialPositions.set(k, clone(v)));
@@ -316,14 +316,6 @@ export default class Context {
 
   setPositionForNode(node, position) {
     this.positions.set(node, position);
-  }
-
-  clearMovedNodes() {
-    this.movedNodes.clear();
-  }
-
-  clearInitialPositions() {
-    this.initialPositions.clear();
   }
 
   clearCausalNodes() {
