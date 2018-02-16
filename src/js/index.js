@@ -28,18 +28,18 @@ interact(NODE_QUERY_SELECTOR)
       clearTimeout(timer);
 
       const {
-        dx: eventDX,
-        dy: eventDY,
+        dx,
+        dy,
         target,
       } = event;
 
       // move the target (basic interact dnd, nothing to do w/ auto arrange context)
       const targetRect = target.getBoundingClientRect();
-      target.style.left = `${targetRect.left + eventDX}px`;
-      target.style.top = `${targetRect.top + eventDY}px`;
+      target.style.left = `${targetRect.left + dx}px`;
+      target.style.top = `${targetRect.top + dy}px`;
 
       // update the context
-      context.beforeMove(target, eventDX, eventDY);
+      context.beforeMove(target, dx, dy);
       //
 
       // set timer for delay of changes
