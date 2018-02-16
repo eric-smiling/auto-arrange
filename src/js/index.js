@@ -39,17 +39,7 @@ interact(NODE_QUERY_SELECTOR)
       target.style.top = `${targetRect.top + eventDY}px`;
 
       // update the context
-      const targetPos = context.getPositionForNode(target);
-      context.setPositionForNode(target, {
-        id: targetPos.id,
-        rect: {
-          left: targetPos.rect.left + eventDX,
-          right: targetPos.rect.right + eventDX,
-          top: targetPos.rect.top + eventDY,
-          bottom: targetPos.rect.bottom + eventDY,
-        },
-      });
-      context.clearCausalNodes();
+      context.beforeMove(target, eventDX, eventDY);
       //
 
       // set timer for delay of changes

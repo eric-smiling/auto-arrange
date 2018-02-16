@@ -34,6 +34,20 @@ export default class Context {
     this.positions.forEach((v, k) => this.initialPositions.set(k, clone(v)));
   }
 
+  beforeMove(node, DX, DY) {
+    const nodePos = this.positions.get(node);
+    this.setPositionForNode(node, {
+      id: nodePos.id,
+      rect: {
+        left: nodePos.rect.left + DX,
+        right: nodePos.rect.right + DX,
+        top: nodePos.rect.top + DY,
+        bottom: nodePos.rect.bottom + DY,
+      },
+    });
+    this.causalNodes.clear();
+  }
+
   move(target) {
     this.doRevert(target);
     this.doRepel(target, target);
@@ -310,15 +324,8 @@ export default class Context {
     return this.positions;
   }
 
-  getPositionForNode(node) {
-    return this.positions.get(node);
-  }
-
   setPositionForNode(node, position) {
     this.positions.set(node, position);
   }
 
-  clearCausalNodes() {
-    this.causalNodes.clear();
-  }
 }
