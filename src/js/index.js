@@ -45,7 +45,15 @@ interact(NODE_QUERY_SELECTOR)
       // set timer for delay of changes
       timer = setTimeout(() => {
         // handle drag move within context
-        context.move(target);
+        context.doMove({
+          target,
+          onRevert: (args) => {
+            console.log('onRevert', {args});
+          },
+          onRepel: (args) => {
+            console.log('onRepel', {args});
+          },
+        });
       }, 100);
     },
 
@@ -55,7 +63,7 @@ interact(NODE_QUERY_SELECTOR)
       clearTimeout(timer);
 
       // handle drag end within context
-      context.end(target);
+      context.endMove(target);
     },
   });
 

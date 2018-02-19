@@ -48,12 +48,12 @@ export default class Context {
     this.causalNodes.clear();
   }
 
-  move(target) {
-    this.doRevert(target);
-    this.doRepel(target, target);
+  doMove({ target, onRevert = () => {}, onRepel = () => {} }) {
+    this.doRevert(target, onRevert);
+    this.doRepel(target, target, onRepel);
   }
 
-  end(target) {
+  endMove(target) {
     this.doRepel(target, null);
   }
 
@@ -166,7 +166,7 @@ export default class Context {
         return;
       }
 
-      const initRect = initialPositions.get(node);
+      const initialNodePosition = initialPositions.get(node);
       const nodePosition = positions.get(node);
       const {
         classList,
@@ -174,7 +174,7 @@ export default class Context {
       } = node;
 
       // revert items back to where they were if there's now room
-      if (movedNodes.has(node) && !testIntersection(initRect, positions.get(target))) {
+      if (movedNodes.has(node) && !testIntersection(initialNodePosition, positions.get(target))) {
         const inter = testIntersections(initialPositions.get(node), nodes.map((cel) => {
           const p = positions.get(cel);
           p.id = cel.id;
@@ -182,16 +182,19 @@ export default class Context {
         }));
 
         if (!inter) {
-          nodePosition.rect.left = initRect.left;
-          nodePosition.rect.right = initRect.right;
-          nodePosition.rect.top = initRect.top;
-          nodePosition.rect.bottom = initRect.bottom;
-          classList.add('repelling');
-          style.left = `${nodePosition.rect.left}px`;
-          style.top = `${nodePosition.rect.top}px`;
-          nodePosition.id = node.id;
-          positions.set(node, nodePosition);
+          positions.set(node, {
+            id: node.id,
+            rect: {
+              ...initialNodePosition.rect,
+            },
+          });
           movedNodes.delete(node);
+
+          // MOVE TO CALLBACK
+          const { top, left } = initialNodePosition.rect;
+          classList.add('repelling');
+          style.left = `${left}px`;
+          style.top = `${top}px`;
         }
       }
     });
