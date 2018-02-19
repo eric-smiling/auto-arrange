@@ -44,24 +44,26 @@ interact(NODE_QUERY_SELECTOR)
 
       // set timer for delay of changes
       timer = setTimeout(() => {
+        // This callback expects the node and the associated
+        // changed rect values. It updates the DOM with those values.
+        // So far, this is exactly what is needed for both repels
+        // and reverts. At the moment, the id parameter is not used
+        // but keeping it in place just in case we want to remove
+        // the node argument and rely on id instead.
+        const onChange = (node, { id, rect }) => {
+          const { classList, style } = node;
+          const { top, left } = rect;
+          classList.add('repelling');
+          style.left = left ? `${left}px` : '';
+          style.top = top ? `${top}px` : '';
+        };
+
         // handle drag move within context
         context.doMove({
           target,
           nodes: getNodes(),
-          onRevert: (node, { id, rect }) => {
-            const { classList, style } = node;
-            const { top, left } = rect;
-            classList.add('repelling');
-            style.left = left ? `${left}px` : '';
-            style.top = top ? `${top}px` : '';
-          },
-          onRepel: (node, { id, rect }) => {
-            const { classList, style } = node;
-            const { top, left } = rect;
-            classList.add('repelling');
-            style.left = left ? `${left}px` : '';
-            style.top = top ? `${top}px` : '';
-          },
+          onRevert: onChange,
+          onRepel: onChange,
         });
       }, 100);
     },
