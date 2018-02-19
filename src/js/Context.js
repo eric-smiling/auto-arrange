@@ -147,7 +147,7 @@ export default class Context {
     });
   }
 
-  doRevert(target) {
+  doRevert(target, onRevert = () => {}) {
     const {
       getNodes,
       initialPositions,
@@ -167,11 +167,6 @@ export default class Context {
       }
 
       const initialNodePosition = initialPositions.get(node);
-      const nodePosition = positions.get(node);
-      const {
-        classList,
-        style,
-      } = node;
 
       // revert items back to where they were if there's now room
       if (movedNodes.has(node) && !testIntersection(initialNodePosition, positions.get(target))) {
@@ -190,11 +185,7 @@ export default class Context {
           });
           movedNodes.delete(node);
 
-          // MOVE TO CALLBACK
-          const { top, left } = initialNodePosition.rect;
-          classList.add('repelling');
-          style.left = `${left}px`;
-          style.top = `${top}px`;
+          onRevert(node, initialNodePosition);
         }
       }
     });

@@ -47,8 +47,12 @@ interact(NODE_QUERY_SELECTOR)
         // handle drag move within context
         context.doMove({
           target,
-          onRevert: (args) => {
-            console.log('onRevert', {args});
+          onRevert: (node, { id, rect }) => {
+            const { classList, style } = node;
+            const { top, left } = rect;
+            classList.add('repelling');
+            style.left = `${left}px`;
+            style.top = `${top}px`;
           },
           onRepel: (args) => {
             console.log('onRepel', {args});
