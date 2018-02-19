@@ -8,24 +8,16 @@ import {
 import { MARGIN } from './constants';
 
 export default class Context {
-  constructor(getNodes) {
-    if (typeof getNodes !== 'function') {
-      throw new Error('getNodes function is required');
-    }
-
+  constructor() {
     this.positions = new Map(); // current positions
     this.initialPositions = new Map(); // initial positions at drag start
     this.movedNodes = new Map(); // have we moved this node within this mousemove?
     this.causalNodes = new Map(); // what nodes have caused this one to move?
     this.attractedNodes = new Map(); // what nodes have we attracted?
-
-    this.getNodes = getNodes; // how can we find nodes
-
-    this.discoverPositions();
   }
 
-  start() {
-    this.discoverPositions();
+  start(nodes) {
+    this.discoverPositions(nodes);
     this.initialPositions.clear();
     this.causalNodes.clear();
     this.movedNodes.clear();
@@ -48,18 +40,23 @@ export default class Context {
     this.causalNodes.clear();
   }
 
-  doMove({ target, onRevert = () => {}, onRepel = () => {} }) {
-    this.doRevert(target, onRevert);
-    this.doRepel(target, target, onRepel);
+  doMove({
+    target,
+    nodes,
+    onRevert = () => {},
+    onRepel = () => {},
+  }) {
+    this.doRevert(target, nodes, onRevert);
+    this.doRepel(target, nodes, target, onRepel);
   }
 
-  endMove(target) {
-    this.doRepel(target, null);
+  endMove(target, nodes) {
+    this.doRepel(target, nodes, null);
   }
 
   // go find the nodes and store the position data inside of this.positions
-  discoverPositions() {
-    this.getNodes()
+  discoverPositions(nodes) {
+    nodes
       .forEach((node) => {
         this.positions.set(node, {
           id: node.id,
@@ -69,10 +66,9 @@ export default class Context {
   }
 
   // private
-  doAttract(target, dx, dy, ignore) {
+  doAttract(target, nodes, dx, dy, ignore) {
     const {
       attractedNodes,
-      getNodes,
       positions,
     } = this;
 
@@ -81,75 +77,73 @@ export default class Context {
     }
 
     const tp = positions.get(target);
-    const nodes = getNodes();
 
-    nodes.sort(euclideanSort(tp.rect, x => positions.get(x).rect));
-
-    nodes.forEach((node) => {
-      if (target === node || ignore === node || attractedNodes.has(node)) {
-        return;
-      }
-
-      const ep = positions.get(node);
-      const { style } = node;
-
-      const mx = (ep.rect.left - tp.rect.right) + dx;
-      if ((mx >= 0 && mx <= MARGIN * 2) &&
-        (
-          (ep.rect.top < tp.rect.bottom - dx && ep.rect.bottom > tp.rect.top - dx) ||
-          (ep.rect.bottom > tp.rect.top - dx && ep.rect.top < tp.rect.bottom - dx)
-        )
-      ) {
-        // move left
-        const cp = {
-          id: node.id,
-          rect: {
-            top: ep.rect.top,
-            bottom: ep.rect.bottom,
-            left: ep.rect.left + dx,
-            right: ep.rect.right + dx,
-          },
-        };
-
-        if (!testIntersections(cp, nodes.map(e => positions.get(e)))) {
-          ep.rect.left += dx;
-          ep.rect.right += dx;
-          style.left = `${ep.rect.left}px`;
-          attractedNodes.set(node, true);
-          this.doAttract(node, dx, dy, ignore || target);
+    nodes
+      .sort(euclideanSort(tp.rect, x => positions.get(x).rect))
+      .forEach((node) => {
+        if (target === node || ignore === node || attractedNodes.has(node)) {
+          return;
         }
-      }
-      const my = (ep.rect.top - tp.rect.bottom) + dy;
-      if ((my >= 0 && my <= MARGIN * 2) &&
-        (
-          (ep.rect.left < tp.rect.right && ep.rect.right > tp.rect.left) ||
-          (ep.rect.right > tp.rect.left && ep.rect.left < tp.rect.right)
-        )
-      ) {
-        // move up
-        const cp = {
-          id: node.id,
-          rect: {
-            top: ep.rect.top + dy,
-            bottom: ep.rect.bottom + dy,
-            left: ep.rect.left,
-            right: ep.rect.right,
-          },
-        };
-        if (!testIntersections(cp, nodes.map(e => positions.get(e)))) {
-          ep.rect.top += dy;
-          ep.rect.bottom += dy;
-          style.top = `${ep.rect.top}px`;
-          attractedNodes.set(node, true);
-          this.doAttract(node, dx, dy, ignore || target);
+
+        const ep = positions.get(node);
+        const { style } = node;
+
+        const mx = (ep.rect.left - tp.rect.right) + dx;
+        if ((mx >= 0 && mx <= MARGIN * 2) &&
+          (
+            (ep.rect.top < tp.rect.bottom - dx && ep.rect.bottom > tp.rect.top - dx) ||
+            (ep.rect.bottom > tp.rect.top - dx && ep.rect.top < tp.rect.bottom - dx)
+          )
+        ) {
+          // move left
+          const cp = {
+            id: node.id,
+            rect: {
+              top: ep.rect.top,
+              bottom: ep.rect.bottom,
+              left: ep.rect.left + dx,
+              right: ep.rect.right + dx,
+            },
+          };
+
+          if (!testIntersections(cp, nodes.map(e => positions.get(e)))) {
+            ep.rect.left += dx;
+            ep.rect.right += dx;
+            style.left = `${ep.rect.left}px`;
+            attractedNodes.set(node, true);
+            this.doAttract(node, nodes, dx, dy, ignore || target);
+          }
         }
-      }
-    });
+        const my = (ep.rect.top - tp.rect.bottom) + dy;
+        if ((my >= 0 && my <= MARGIN * 2) &&
+          (
+            (ep.rect.left < tp.rect.right && ep.rect.right > tp.rect.left) ||
+            (ep.rect.right > tp.rect.left && ep.rect.left < tp.rect.right)
+          )
+        ) {
+          // move up
+          const cp = {
+            id: node.id,
+            rect: {
+              top: ep.rect.top + dy,
+              bottom: ep.rect.bottom + dy,
+              left: ep.rect.left,
+              right: ep.rect.right,
+            },
+          };
+          if (!testIntersections(cp, nodes.map(e => positions.get(e)))) {
+            ep.rect.top += dy;
+            ep.rect.bottom += dy;
+            style.top = `${ep.rect.top}px`;
+            attractedNodes.set(node, true);
+            this.doAttract(node, nodes, dx, dy, ignore || target);
+          }
+        }
+      });
   }
 
-  doRevert(target, onRevert = () => {}) {
+  doRevert(target, nodes, onRevert = () => {}) {
     const {
-      getNodes,
       initialPositions,
       movedNodes,
       positions,
@@ -159,42 +153,41 @@ export default class Context {
 
     // sort rects by proximity to the target so we remember
     // initial positions  with the right dependency order
-    const nodes = getNodes().sort(euclideanSort(ep.rect, x => positions.get(x).rect));
-
-    nodes.forEach((node) => {
-      if (node === target) {
-        return;
-      }
-
-      const initialNodePosition = initialPositions.get(node);
-
-      // revert items back to where they were if there's now room
-      if (movedNodes.has(node) && !testIntersection(initialNodePosition, positions.get(target))) {
-        const inter = testIntersections(initialPositions.get(node), nodes.map((cel) => {
-          const p = positions.get(cel);
-          p.id = cel.id;
-          return p;
-        }));
-
-        if (!inter) {
-          positions.set(node, {
-            id: node.id,
-            rect: {
-              ...initialNodePosition.rect,
-            },
-          });
-          movedNodes.delete(node);
-
-          onRevert(node, initialNodePosition);
+    nodes
+      .sort(euclideanSort(ep.rect, x => positions.get(x).rect))
+      .forEach((node) => {
+        if (node === target) {
+          return;
         }
-      }
-    });
+
+        const initialNodePosition = initialPositions.get(node);
+
+        // revert items back to where they were if there's now room
+        if (movedNodes.has(node) && !testIntersection(initialNodePosition, positions.get(target))) {
+          const inter = testIntersections(initialPositions.get(node), nodes.map((cel) => {
+            const p = positions.get(cel);
+            p.id = cel.id;
+            return p;
+          }));
+
+          if (!inter) {
+            positions.set(node, {
+              id: node.id,
+              rect: {
+                ...initialNodePosition.rect,
+              },
+            });
+            movedNodes.delete(node);
+
+            onRevert(node, initialNodePosition);
+          }
+        }
+      });
   }
 
-  doRepel(target, ignore) {
+  doRepel(target, nodes, ignore, onRepel = () => {}) {
     const {
       causalNodes,
-      getNodes,
       movedNodes,
       positions,
     } = this;
@@ -202,7 +195,10 @@ export default class Context {
     // get our target position
     const tp = positions.get(target);
 
-    getNodes().forEach((node) => {
+    nodes.forEach((node) => {
+      // this will contain values passed to the onRepel callback
+      const result = {};
+
       // don't try to move ourself out of our own way
       if (target === node) {
         return;
@@ -219,7 +215,7 @@ export default class Context {
 
         if (causalNodes.has(node) && causalNodes.get(node).has(target)) {
           // we have circular dependencies so give up
-          //console.log("DEADLOCK!", target.id, node.id);
+          // console.log("DEADLOCK!", target.id, node.id);
           return;
         }
 
@@ -243,11 +239,8 @@ export default class Context {
         const ySign = (ep.rect.bottom + ep.rect.top) / 2 > (tp.rect.bottom + tp.rect.top) / 2 ? 1 : -1;
         let yDisplacement = ySign * (oy2 - oy1);
 
-        node.classList.add('repelling');
-
         // our positions to move
         const ex = positions.get(node);
-        const { style } = node;
         // should we move vertically or horizontally?
         if (Math.abs(xDisplacement) < Math.abs(yDisplacement)) {
           xDisplacement = (
@@ -255,8 +248,8 @@ export default class Context {
               Math.ceil(xDisplacement) + MARGIN :
               Math.floor(xDisplacement) - MARGIN
           );
-          style.left = `${ex.rect.left + xDisplacement}px`;
-          ex.rect.left = parseInt(style.left, 10);
+          result.left = ex.rect.left + xDisplacement;
+          ex.rect.left = result.left;
           ex.rect.right = ex.rect.left + ex.rect.width;
         } else {
           yDisplacement = (
@@ -264,8 +257,8 @@ export default class Context {
               Math.ceil(yDisplacement) + MARGIN :
               Math.floor(yDisplacement) - MARGIN
           );
-          style.top = `${ex.rect.top + yDisplacement}px`;
-          ex.rect.top = parseInt(style.top, 10);
+          result.top = ex.rect.top + yDisplacement;
+          ex.rect.top = result.top;
           ex.rect.bottom = ex.rect.top + ex.rect.height;
         }
 
@@ -273,13 +266,18 @@ export default class Context {
         ep.id = node.id;
         positions.set(node, ep);
 
+        onRepel(node, {
+          id: node.id,
+          rect: result,
+        });
+
         // recurse to move any nodes out of the way which might now intersect
-        this.doRepel(node, ignore);
+        this.doRepel(node, nodes, ignore);
       }
     });
   }
 
-  doToggleSize(el) {
+  doToggleSize(el, nodes) {
     const {
       attractedNodes,
       causalNodes,
@@ -301,7 +299,7 @@ export default class Context {
         width: w1,
         height: h1,
       } = positions.get(el).rect;
-      this.doAttract(el, w1 - w0, h1 - h0, null);
+      this.doAttract(el, nodes, w1 - w0, h1 - h0, null);
       discoverPositions();
     } else {
       initialPositions.clear();
@@ -309,7 +307,7 @@ export default class Context {
       el.setAttribute('expanding', 1);
       el.classList.remove('collapsed');
       discoverPositions();
-      this.doRepel(el, null);
+      this.doRepel(el, nodes, null);
       el.removeAttribute('expanding');
     }
   }

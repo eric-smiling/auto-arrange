@@ -9,7 +9,7 @@ const NODE_QUERY_SELECTOR = '.draggable';
 const getNodes = () => Array.from(document.querySelectorAll(NODE_QUERY_SELECTOR));
 
 // create context for auto-arranging nodes
-const context = new Context(getNodes);
+const context = new Context();
 
 // timer used for event handling while dragging
 let timer;
@@ -21,7 +21,7 @@ interact(NODE_QUERY_SELECTOR)
       e.target.style.zIndex = Date.now();
 
       // handle drag start within context
-      context.start();
+      context.start(getNodes());
     },
 
     onmove: (event) => {
@@ -47,15 +47,20 @@ interact(NODE_QUERY_SELECTOR)
         // handle drag move within context
         context.doMove({
           target,
+          nodes: getNodes(),
           onRevert: (node, { id, rect }) => {
             const { classList, style } = node;
             const { top, left } = rect;
             classList.add('repelling');
-            style.left = `${left}px`;
-            style.top = `${top}px`;
+            style.left = left ? `${left}px` : '';
+            style.top = top ? `${top}px` : '';
           },
-          onRepel: (args) => {
-            console.log('onRepel', {args});
+          onRepel: (node, { id, rect }) => {
+            const { classList, style } = node;
+            const { top, left } = rect;
+            classList.add('repelling');
+            style.left = left ? `${left}px` : '';
+            style.top = top ? `${top}px` : '';
           },
         });
       }, 100);
@@ -67,7 +72,7 @@ interact(NODE_QUERY_SELECTOR)
       clearTimeout(timer);
 
       // handle drag end within context
-      context.endMove(target);
+      context.endMove(target, getNodes());
     },
   });
 
@@ -75,6 +80,6 @@ interact(NODE_QUERY_SELECTOR)
 // other event handlers
 getNodes().forEach((node) => {
   interact(node)
-    .on('tap', e => context.doToggleSize(e.target), true)
+    .on('tap', e => context.doToggleSize(e.target, getNodes()), true)
     .on('mousedown', e => e.target.classList.remove('repelling'), true);
 });
